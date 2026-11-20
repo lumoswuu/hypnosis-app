@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>催眠助手</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(circle at 50% 20%,#3d1340 0%,#1a0620 55%,#0d020e 100%);
+    display:flex;align-items:center;justify-content:center;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    color:#fff;overflow:hidden;padding:16px;
+  }
+
+  .phone{
+    position:relative;
+    width:min(380px,100%);
+    height:min(760px,calc(100vh - 32px));
+    background:linear-gradient(180deg,#2a0e2e,#12040f);
+    border-radius:38px;
+    border:1px solid rgba(255,120,220,.25);
+    box-shadow:0 0 60px rgba(255,90,200,.25), inset 0 0 60px rgba(200,60,160,.15);
+    overflow:hidden;
+  }
+
+  .statusbar{
+    position:absolute;top:0;left:0;right:0;z-index:10;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:16px 24px 8px;font-size:12px;color:rgba(255,200,240,.5);
+    letter-spacing:.5px;pointer-events:none;
+  }
+
+  /* ---------- 主界面 ---------- */
+  .screen{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;
+    padding:70px 26px 30px;
+    transition:opacity .35s,transform .35s;
+  }
+  .screen.hide{opacity:0;transform:scale(.95);pointer-events:none}
+
+  .orb{position:relative;width:150px;height:150px;margin:18px 0 26px;
+       display:flex;align-items:center;justify-content:center;flex:none}
+  .orb-ring{
+    position:absolute;inset:0;border-radius:50%;
+    border:2px solid rgba(255,130,220,.55);
+    animation:pulse 2.8s ease-out infinite;
+  }
+  .orb-ring.r2{animation-delay:1.4s}
+  @keyframes pulse{
+    0%{transform:scale(.55);opacity:.9}
+    100%{transform:scale(1.55);opacity:0}
+  }
+  .orb-core{
+    width:110px;height:110px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#ffc2f0,#c233b0 55%,#5c0f52);
+    box-shadow:0 0 45px rgba(255,120,225,.7), inset 0 0 30px rgba(255,255,255,.25);
+    display:flex;align-items:center;justify-content:center;
+    font-size:34px;color:rgba(255,255,255,.9);
+    animation:breathe 4s ease-in-out infinite;
+  }
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
+  h1{
+    font-size:26px;letter-spacing:8px;font-weight:600;text-indent:8px;
+    background:linear-gradient(90deg,#ffd6f5,#ff7ad9,#ffd6f5);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{font-size:12px;color:rgba(255,210,245,.4);margin-top:10px;letter-spacing:1px}
+
+  .panel{
+    width:100%;margin-top:auto;
+    background:rgba(255,150,230,.05);
+    border:1px solid rgba(255,120,220,.2);
+    border-radius:18px;padding:18px 18px 16px;
+  }
+  .row{display:flex;justify-content:space-between;font-size:13px;
+       color:rgba(255,220,245,.75);margin-bottom:12px;letter-spacing:.5px}
+  .row:last-child{margin-bottom:0;margin-top:16px}
+
+  input[type=range]{
+    width:100%;-webkit-appearance:none;appearance:none;
+    height:4px;border-radius:2px;outline:none;
+    background:linear-gradient(90deg,#ff8ad8,#8a2be2);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:#fff;box-shadow:0 0 14px rgba(255,120,225,.9);cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px;height:18px;border:none;border-radius:50%;
+    background:#fff;box-shadow:0 0 14px rgba(255,120,225,.9);cursor:pointer;
+  }
+
+  .btn{
+    width:100%;margin-top:18px;padding:16px;border:none;border-radius:16px;
+    font-size:17px;letter-spacing:5px;font-weight:600;color:#fff;cursor:pointer;
+    font-family:inherit;
+    background:linear-gradient(135deg,#e040b0,#ff8ad8);
+    box-shadow:0 8px 28px rgba(240,60,180,.45);
+    transition:transform .12s;
+  }
+  .btn:active{transform:scale(.97)}
+
+  .tiny{font-size:11px;color:rgba(255,190,235,.3);margin-top:14px;letter-spacing:.5px}
+
+  /* ---------- 催眠界面 ---------- */
+  .hypno{
+    position:absolute;inset:0;z-index:20;background:#12020c;
+    opacity:0;pointer-events:none;transition:opacity .5s;overflow:hidden;
+  }
+  .hypno.on{opacity:1;pointer-events:auto}
+  #spiral{
+    position:absolute;left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    transform-origin:center center;
+    will-change:transform;
+  }
+  .hypno-text{
+    position:absolute;left:0;right:0;bottom:20%;z-index:2;
+    text-align:center;font-size:19px;letter-spacing:3px;
+    color:#ffd6f5;line-height:1.8;padding:0 30px;
+    text-shadow:0 0 20px rgba(255,140,230,.9),0 0 45px rgba(220,60,180,.6);
+    animation:fadePulse 3s ease-in-out infinite;
+  }
+  @keyframes fadePulse{0%,100%{opacity:.35}50%{opacity:1}}
+  .countdown{
+    position:absolute;top:9%;left:0;right:0;z-index:2;
+    text-align:center;font-size:54px;font-weight:200;letter-spacing:6px;
+    color:rgba(255,220,245,.85);font-variant-numeric:tabular-nums;
+    text-shadow:0 0 30px rgba(255,120,225,.8);
+  }
+
+  /* ---------- 结果界面 ---------- */
+  .result{
+    position:absolute;inset:0;z-index:30;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:40px 32px;text-align:center;
+    background:radial-gradient(circle at 50% 40%,#3d1040,#0d020e 70%);
+    opacity:0;pointer-events:none;transition:opacity .6s;
+  }
+  .result.on{opacity:1;pointer-events:auto}
+  .result .emoji{font-size:74px;animation:breathe 2.2s ease-in-out infinite}
+  .result h2{
+    font-size:24px;letter-spacing:6px;margin:20px 0 14px;color:#ffc2f0;text-indent:6px;
+  }
+  .result-main{font-size:17px;line-height:1.9;color:#fff}
+  .result-sub{font-size:13px;color:rgba(255,210,245,.5);line-height:1.9;margin-top:12px}
+  .btn.small{width:auto;padding:12px 36px;font-size:15px;letter-spacing:2px;margin-top:28px}
+
+  @media (max-height:700px){
+    .orb{width:110px;height:110px;margin:6px 0 14px}
+    .orb-core{width:80px;height:80px;font-size:26px}
+    h1{font-size:22px}
+    .countdown{font-size:42px}
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar">
+    <span id="clock">00:00</span>
+    <span>催眠助手 v1.0</span>
+  </div>
+
+  <!-- 主界面 -->
+  <div class="screen" id="home">
+    <div class="orb">
+      <div class="orb-ring"></div>
+      <div class="orb-ring r2"></div>
+      <div class="orb-core">◎</div>
+    </div>
+    <h1>催眠诱导</h1>
+    <p class="sub">请保持注视 · 本程序仅供娱乐</p>
+
+    <div class="panel">
+      <div class="row">
+        <span>诱导强度</span>
+        <span id="lvlText">70%</span>
+      </div>
+      <input type="range" id="lvl" min="10" max="100" value="70">
+      <div class="row">
+        <span>诱导模式</span>
+        <span>螺旋凝视</span>
+      </div>
+    </div>
+
+    <button class="btn" id="startBtn">开 始 催 眠</button>
+    <p class="tiny">※ 使用者需自行承担被朋友嘲笑的后果</p>
+  </div>
+
+  <!-- 催眠界面 -->
+  <div class="hypno" id="hypno">
+    <canvas id="spiral"></canvas>
+    <div class="countdown" id="countdown">10</div>
+    <div class="hypno-text" id="hypnoText">放松……</div>
+  </div>
+
+  <!-- 结果界面 -->
+  <div class="result" id="result">
+    <div class="emoji">🐶</div>
+    <h2>催 眠 成 功</h2>
+    <p class="result-main">你现在是一只小狗。</p>
+    <p class="result-sub">请对着屏幕"汪"一声，以确认接受指令。</p>
+    <button class="btn small" id="againBtn">再来一次</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const homeEl    = $('home');
+  const hypnoEl   = $('hypno');
+  const resultEl  = $('result');
+  const canvas    = $('spiral');
+  const ctx       = canvas.getContext('2d');
+  const countdownEl = $('countdown');
+  const hypnoTextEl = $('hypnoText');
+  const lvl       = $('lvl');
+  const lvlText   = $('lvlText');
+
+  let raf = null, angle = 0, speed = 0.6;
+  let cdTimer = null, phTimer = null;
+
+  /* 时钟 */
+  function tickClock(){
+    const d = new Date();
+    $('clock').textContent =
+      String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+  tickClock();
+  setInterval(tickClock, 15000);
+
+  /* 强度滑块 */
+  lvl.addEventListener('input', () => { lvlText.textContent = lvl.value + '%'; });
+
+  /* 绘制螺旋 */
+  function buildSpiral(){
+    const rect = hypnoEl.getBoundingClientRect();
+    const d = Math.hypot(rect.width, rect.height) * 1.05;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const size = Math.round(d * dpr);
+
+    canvas.width  = size;
+    canvas.height = size;
+    canvas.style.width  = d + 'px';
+    canvas.style.height = d + 'px';
+
+    const cx = size / 2, cy = size / 2;
+    const maxR = size * 0.5 * 0.985;
+    const turns = 16;
+    const thetaMax = turns * Math.PI * 2;
+    const a = maxR / thetaMax;
+
+    /* 粉紫色背景 */
+    ctx.fillStyle = '#12020c';
+    ctx.fillRect(0, 0, size, size);
+
+    ctx.beginPath();
+    for (let th = 0; th <= thetaMax; th += 0.02){
+      const r = a * th;
+      const x = cx + r * Math.cos(th);
+      const y = cy + r * Math.sin(th);
+      if (th === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.lineWidth = Math.PI * a * 1.05;
+    ctx.lineCap = 'butt';
+    /* 粉紫色螺旋 */
+    ctx.strokeStyle = '#ff9ae0';
+    ctx.stroke();
+  }
+
+  /* 旋转动画 */
+  function spin(){
+    angle = (angle + speed) % 360;
+    canvas.style.transform = 'translate(-50%,-50%) rotate(' + angle + 'deg)';
+    raf = requestAnimationFrame(spin);
+  }
+
+  const phases = [
+    '放松……',
+    '看着漩涡的中心……',
+    '你的眼皮开始变重……',
+    '不要抵抗，顺着漩涡下沉……',
+    '很好……你正在接受暗示……'
+  ];
+
+  function startHypno(){
+    homeEl.classList.add('hide');
+    resultEl.classList.remove('on');
+    hypnoEl.classList.add('on');
+
+    buildSpiral();
+    angle = 0;
+    speed = 0.35 + (Number(lvl.value) / 100) * 1.15;
+    if (!raf) spin();
+
+    /* 倒计时 */
+    let remain = 10;
+    countdownEl.textContent = remain;
+
+    let pi = 0;
+    hypnoTextEl.textContent = phases[0];
+
+    clearInterval(cdTimer);
+    clearInterval(phTimer);
+
+    cdTimer = setInterval(() => {
+      remain--;
+      countdownEl.textContent = remain;
+      if (remain <= 0){
+        clearInterval(cdTimer);
+        clearInterval(phTimer);
+        finish();
+      }
+    }, 1000);
+
+    phTimer = setInterval(() => {
+      pi = Math.min(pi + 1, phases.length - 1);
+      hypnoTextEl.textContent = phases[pi];
+    }, 2000);
+  }
+
+  function finish(){
+    hypnoEl.classList.remove('on');
+    resultEl.classList.add('on');
+    if (raf){ cancelAnimationFrame(raf); raf = null; }
+  }
+
+  $('startBtn').addEventListener('click', startHypno);
+  $('againBtn').addEventListener('click', () => {
+    resultEl.classList.remove('on');
+    homeEl.classList.remove('hide');
+  });
+
+  /* 窗口尺寸变化时重绘螺旋 */
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (hypnoEl.classList.contains('on')) buildSpiral();
+    }, 200);
+  });
+})();
+</script>
+</body>
+</html>
